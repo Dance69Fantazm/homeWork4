@@ -23,7 +23,7 @@ static final int DOTS_TO_WIN = 4;
         while (true) {
             humanTurn();
             printMap();
-            if(checkWin(DOT_X)){
+            if(checkWinLines(DOT_X, DOTS_TO_WIN)){
                 System.out.println("Вы победитель!");
                 break;
             }
@@ -34,7 +34,7 @@ static final int DOTS_TO_WIN = 4;
 
             aiTurn();
             printMap();
-            if(checkWin(DOT_O)){
+            if(checkWinLines(DOT_O, DOTS_TO_WIN)){
                 System.out.println("Комьютер победил!");
                 break;
             }
@@ -85,11 +85,52 @@ static final int DOTS_TO_WIN = 4;
     static void aiTurn() {
         int x;
         int y;
+
+        // Попытка победить
+        for (int i = 0; i <SIZE ; i++) {
+            for (int j = 0; j <SIZE ; j++) {
+                if (isCellValid(i, j)) {
+                    map[i][j] = DOT_O;
+                    if (checkWinLines(DOT_O, DOTS_TO_WIN)) {
+                        return;
+                    }
+                    map[i][j] = DOT_EMPTY;
+                }
+            }
+        }
+
+        // Не дать победить сопернику
+        for (int i = 0; i <SIZE ; i++) {
+            for (int j = 0; j <SIZE ; j++) {
+                if (isCellValid(i, j)) {
+                    map[i][j] = DOT_X;
+                    if (checkWinLines(DOT_X, DOTS_TO_WIN)) {
+                        map[i][j] = DOT_O;
+                        return;
+                    }
+                    map[i][j] = DOT_EMPTY;
+                }
+            }
+        }
+
+        // Попытка №2
+        for (int i = 0; i <SIZE ; i++) {
+            for (int j = 0; j <SIZE ; j++) {
+                if (isCellValid(i, j)) {
+                    map[i][j] = DOT_X;
+                    if (checkWinLines(DOT_X, DOTS_TO_WIN-1) && Math.random() < 0.5) {
+                        map[i][j] = DOT_O;
+                        return;
+                    }
+                    map[i][j] = DOT_EMPTY;
+                }
+            }
+        }
+
         do {
             x = random.nextInt(SIZE);
             y = random.nextInt(SIZE);
-        } while (!isCellValid(y, x));
-
+        } while (!isCellValid(y , x));
         map[y][x] = DOT_O;
     }
 
@@ -112,36 +153,29 @@ static final int DOTS_TO_WIN = 4;
         return true;
     }
 
-    static boolean checkWin(char c) {
-        for (int i=0; i<4; i++) {
-            for (int j=0; j<4; j++) {
-                if (checkDiagonal(c) || checkLanes(c)) return true;
+     static boolean checkLines(int cy, int cx, int vy, int vx, char dot, int dotsToWin ) {
+        if (cx+vx*(dotsToWin-1)>SIZE-1 || cy+vy*(dotsToWin-1)>SIZE-1 || cy+vy*(dotsToWin-1)<0) {
+            return false;
+        }
+
+        for (int i=0; i<dotsToWin; i++) {
+            if (map[cy+i*vy][cx+i*vx] != dot) {
+                return false;
             }
         }
-        return false;
-    }
-    static boolean checkDiagonal(char c) {
-        boolean x, y;
-        x = true;
-        y = true;
-        for (int i=0; i<DOTS_TO_WIN; i++) {
-            x &= (map[i][i] == c);
-            y &= (map[DOTS_TO_WIN-i-1][i] == c);
-        }
-        if (x || y) {return true;}
-        return false;
+        return true;
     }
 
-     static boolean checkLanes(char c) {
-        boolean cols, rows;
-        for (int i=0; i<DOTS_TO_WIN; i++) {
-            cols = true;
-            rows = true;
-            for (int j=0; j<DOTS_TO_WIN; j++) {
-                cols &= (map[i][j] == c);
-                rows &= (map[j][i] == c);
+    static boolean checkWinLines(char dot, int dotsToWin) {
+        for (int i=0; i<SIZE; i++) {
+            for (int j = 0; j <SIZE ; j++) {
+                if (checkLines(i, j, 0, 1, dot, dotsToWin) ||
+                    checkLines(i, j, 1, 0, dot, dotsToWin) ||
+                    checkLines(i, j, 1, 1, dot, dotsToWin) ||
+                    checkLines(i, j, -1, 1, dot,dotsToWin)) {
+                    return true;
+                }
             }
-            if (cols || rows) {return true;}
         }
         return false;
     }
